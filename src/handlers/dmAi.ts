@@ -19,8 +19,12 @@ export function registerDmAiHandler(bot: Telegraf) {
         if (now - last < COOLDOWN_MS) return;
         lastReply.set(userId, now);
 
+        await ctx.sendChatAction("typing");
+        const keepTyping = setInterval(() => {
+            ctx.sendChatAction("typing").catch(() => {});
+        }, 4_000);
+
         try {
-            await ctx.sendChatAction("typing");
             const answer = await ask(ctx.message.text);
 
             if (answer.length <= TELEGRAM_MAX_LENGTH) {
@@ -34,6 +38,8 @@ export function registerDmAiHandler(bot: Telegraf) {
         } catch (err) {
             console.error("DM AI error:", err);
             await ctx.reply(FALLBACK);
+        } finally {
+            clearInterval(keepTyping);
         }
     });
 }
