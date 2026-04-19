@@ -16,6 +16,16 @@ const responseSchema = z.object({
     text: z.string(),
 });
 
+function extractAnswer(value: unknown): string | null {
+    if (typeof value === "string") return value;
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+        for (const v of Object.values(value as Record<string, unknown>)) {
+            if (typeof v === "string" && v.trim()) return v;
+        }
+    }
+    return null;
+}
+
 const SYSTEM_PROMPT = [
     "You are the official EcoHarvest & EcoToken assistant on Telegram.",
     "Answer clearly and concisely based on the knowledge base below.",
@@ -37,7 +47,8 @@ export async function ask(question: string): Promise<string> {
     const knowledge = await loadKnowledge();
 
     const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite-preview",
+        // model: "gemini-3.1-flash-lite-preview",
+        model: "gemini-3-flash-preview",
         contents: [
             {
                 role: "user",
@@ -55,8 +66,17 @@ export async function ask(question: string): Promise<string> {
     const raw = response.text;
     if (!raw) throw new Error("Empty response from model");
 
-    const parsed = responseSchema.safeParse(JSON.parse(raw));
-    if (!parsed.success) throw new Error("Invalid response shape from model");
+    console.log(raw);
 
-    return parsed.data.text;
+    let jsonValue: unknown;
+    try {
+        jsonValue = JSON.parse(raw);
+    } catch {
+        return raw.trim();
+    }
+
+    const answer = extractAnswer(jsonValue);
+    if (answer) return answer.trim();
+
+    throw new Error("Invalid response shape from model");
 }
