@@ -5,36 +5,34 @@ import dailyMessages from "../store/daily-msg.json";
 
 type TimeSlot = "morning" | "afternoon" | "night";
 
-const SCHEDULES: Record<TimeSlot, string> = {
-    morning: "0 8 * * *",
-    afternoon: "0 14 * * *",
-    night: "0 21 * * *",
-};
+const SCHEDULE: { cronExpr: string; slot: TimeSlot; index: number }[] = [
+    { cronExpr: "0 6 * * *", slot: "morning", index: 0 },
+    { cronExpr: "0 8 * * *", slot: "morning", index: 1 },
+    { cronExpr: "0 10 * * *", slot: "morning", index: 2 },
 
-const indexes: Record<TimeSlot, number> = {
-    morning: 0,
-    afternoon: 0,
-    night: 0,
-};
+    { cronExpr: "0 12 * * *", slot: "afternoon", index: 0 },
+    { cronExpr: "0 14 * * *", slot: "afternoon", index: 1 },
+    { cronExpr: "0 16 * * *", slot: "afternoon", index: 2 },
+
+    { cronExpr: "0 18 * * *", slot: "night", index: 0 },
+    { cronExpr: "0 20 * * *", slot: "night", index: 1 },
+    { cronExpr: "0 22 * * *", slot: "night", index: 2 },
+];
 
 const chatIds = allGroupIds
     .map(Number)
     .filter((id) => Number.isFinite(id) && id !== 0);
 
-async function sendPost(telegram: Telegraf["telegram"], slot: TimeSlot) {
-    const posts = dailyMessages[slot];
-    if (!posts || posts.length === 0) return;
-
-    const post = posts[indexes[slot] % posts.length];
+async function sendPost(telegram: Telegraf["telegram"], slot: TimeSlot, index: number) {
+    const post = dailyMessages[slot]?.[index];
     if (!post) return;
-    indexes[slot] = (indexes[slot] + 1) % posts.length;
 
     await Promise.all(
         chatIds.map(async (chatId) => {
             try {
                 await telegram.sendMessage(chatId, post.text);
             } catch (err) {
-                console.error(`[scheduler] Failed to send ${slot} post to ${chatId}:`, err);
+                console.error(`[scheduler] Failed to send ${slot}[${index}] to ${chatId}:`, err);
             }
         }),
     );
@@ -48,11 +46,11 @@ export function startScheduler(bot: Telegraf) {
         return;
     }
 
-    for (const slot of Object.keys(SCHEDULES) as TimeSlot[]) {
-        cron.schedule(SCHEDULES[slot], () => sendPost(bot.telegram, slot), {
+    for (const { cronExpr, slot, index } of SCHEDULE) {
+        cron.schedule(cronExpr, () => sendPost(bot.telegram, slot, index), {
             timezone: "Africa/Lagos",
         });
     }
 
-    console.log("[scheduler] Daily posts scheduled (morning 8AM, afternoon 2PM, night 9PM WAT)");
+    console.log("[scheduler] 9 daily posts scheduled (6AM–10PM WAT, 2hrs apart)");
 }
