@@ -104,7 +104,7 @@ export function registerCommandHandlers(bot: Telegraf) {
             [
                 "<b>ICO messaging (verify on site)</b>",
                 "",
-                "Promoted timing: <b>JULY 1, 2026 at 04:00 UTC</b> — confirm on <a href=\"https://ecohavest.org\">ecohavest.org</a> before acting.",
+                "Promoted timing: <b>SEPTEMBER 1, 2026 at 04:00 UTC</b> — confirm on <a href=\"https://ecohavest.org\">ecohavest.org</a> before acting.",
                 "",
                 "The ICO is fundraising; long-term value depends on execution, team visibility, product, and community.",
             ].join("\n"),
